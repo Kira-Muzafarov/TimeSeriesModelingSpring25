@@ -1,0 +1,77 @@
+---
+title: "Importing and Playing with Excel File in R"
+author: "ksm187@scarletmail.rutgers.edu"
+date: "2025-02-07"
+output: 
+  html_document:
+    code_download: true
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+
+Typical_Employee_Survey_Data <- read.csv("/Users/kiramuzafarov/Documents/Typical_Employee_Survey_Data.csv", header = FALSE)
+
+#Assign header names
+colnames(Typical_Employee_Survey_Data) <- c("Age", "Gender", "Satisfaction", "Job_Characteristics", "Years_Employed", "Five_Year_Promotion_Likeliness", "Decision_Involvement", "Budget_Decision_Involvement", "Proudness", "Job_Loyalty_Choice", "Workplace_Relations")
+
+#Print 5-point summary for numerical columns
+summary(Typical_Employee_Survey_Data)
+
+#Boxplot for Age - Most employees are between 30 and 50 years old, with a median age around 38. A few outliers show employees over 60 years old.
+boxplot(Typical_Employee_Survey_Data$Age, main = "Boxplot of Age", ylab = "Years Old", col = "darkblue")
+
+#Box Plot for Years Employed - Shows that most have worked for thier company for 2 to 10 years, with the median being around 5 years. There are a few outliers, showing some employees have worked there for 20 to 50 years.
+boxplot(Typical_Employee_Survey_Data$Years_Employed, main = "Boxplot of Years Employed", ylab = "Years Employed", col = "lightgreen")
+
+#Convert categorical columns to factors
+Typical_Employee_Survey_Data$Gender <- as.factor(Typical_Employee_Survey_Data$Gender)
+Typical_Employee_Survey_Data$Satisfaction <- as.factor(Typical_Employee_Survey_Data$Satisfaction)
+Typical_Employee_Survey_Data$Job_Characteristics <- as.factor(Typical_Employee_Survey_Data$Job_Characteristics)
+Typical_Employee_Survey_Data$Five_Year_Promotion_Likeliness <- as.factor(Typical_Employee_Survey_Data$Five_Year_Promotion_Likeliness)
+Typical_Employee_Survey_Data$Decision_Involvement <- as.factor(Typical_Employee_Survey_Data$Decision_Involvement)
+Typical_Employee_Survey_Data$Budget_Decision_Involvement <- as.factor(Typical_Employee_Survey_Data$Budget_Decision_Involvement)
+Typical_Employee_Survey_Data$Job_Loyalty_Choice <- as.factor(Typical_Employee_Survey_Data$Job_Loyalty_Choice)
+Typical_Employee_Survey_Data$Workplace_Relations <- as.factor(Typical_Employee_Survey_Data$Workplace_Relations)
+
+#Age Histogram- Shows that most employees are in their 30s and 40s, with the highest frequency around 35 to 40 years old. There are a few employees are in their 20s or over 50.
+hist(Typical_Employee_Survey_Data$Age, main = "Age Distribution", xlab = "Age", ylab = "Frequency", col = "yellow")
+
+# Gender Bar Plot - Shows that there are more females than males in the company, but the workforce seems pretty balanced overall.
+barplot(table(Typical_Employee_Survey_Data$Gender), main = "Gender Distribution", xlab = "Count", ylab = "Gender", names.arg = c("Female", "Male"), col = c("pink", "blue"), horiz = TRUE)
+
+#Satisfaction with Job Pie Chart - Most employees gave a satisfaction rating of 1(Very Satisfied) or 2(Moderately Satisfied), with 1 being the most common. Ratings of 3(A Little Dissatisfied) and 4(Very Dissatisfied) are much less frequent
+satisfaction_counts <- table(Typical_Employee_Survey_Data$Satisfaction)
+pie(satisfaction_counts, main = "Satisfaction Rating Proportions", labels = paste(names(satisfaction_counts), "(", satisfaction_counts, ")", sep = ""), col = rainbow(length(satisfaction_counts)))
+
+# Job Characteristic Values Bar Chart: 5 (Enjoying the Work) is the most valued job characteristic, followed by 1 (High Income), 4 (Opportunities for Advancement), 2 No Danger of Being Fired, and lastly 3 (Flexible Hours).
+barplot(table(Typical_Employee_Survey_Data$Job_Characteristics), main = "Job Characteristics Rating Distribution", xlab = "Job Characteristics Rating", ylab = "Count", col = rainbow(5), names.arg = c("1", "2", "3", "4", "5"))
+
+#Years Employed Histogram - Most people have worked there for less than 10 years. Most worked around 0 to 5 years. There are only a few who have worked there over 20 years, and barely anyone at 50 years.
+hist(Typical_Employee_Survey_Data$Years_Employed, main = "Years Employed", xlab = "Years", ylab = "Frequency", col = "violet")
+
+# Likeliness of Being Promoted in the Next Five Years Bar Plot - Most think it is a 5 (highly unlikely) they’ll get promoted in 5 years, with a lot of 4 (Unlikely) and 5 ratings. Very few gave it a 3 (Not Sure), and some think it’s less likely with 1 (Very Likely) and 2 (Likely) ratings.
+barplot(table(Typical_Employee_Survey_Data$Five_Year_Promotion_Likeliness), main = "Promotion Likeliness in 5 Years", xlab = "Count", ylab = "Rating", names.arg = c("1", "2", "3", "4", "5"), col = cm.colors(5), horiz = TRUE)
+
+# Part Taking In Decisions Pie Chart - Most rated their company allowing them to take part in decsion making as 2 (Much of the Time) or 3(Sometimes), showing they feel somewhat included. Only a few rated it as 1(Always) or 4(Never), indicating either low or high involvement.
+DI_counts <- table(Typical_Employee_Survey_Data$Decision_Involvement)
+pie(DI_counts, main = "Decision Involvement Proportions", labels = paste(names(DI_counts), "(", DI_counts, ")", sep = ""), col = rainbow(length(DI_counts)))
+
+#Part Taking In Decisions Bar Plot - Most rated their company allowing them to take part in budget decsion making as 1(Yes) rather than 2 (no), however the difference between these two options is not great, indicating that half of the employees are involved.
+barplot(table(Typical_Employee_Survey_Data$Budget_Decision_Involvement), main = "Budget Decision Involvement", xlab = "Count", ylab = "Answer", names.arg = c("Yes", "No"), col = c("green", "red"), horiz = TRUE)
+
+#Proudness to be Working in Organization Bar Plot - Most gave a rating of 2 (Somewhat Proud) and 1(Very Proud). the minority gave a rating of 3 (Indifferent) and 4 (Not Proud at All). This indicates that employees are overall proud to work in their organization.
+barplot(table(Typical_Employee_Survey_Data$Proudness), main = "Proudness Rating Distribution", xlab = "Proudness Level", ylab = "Count", col = heat.colors(4), names.arg = c("1", "2", "3", "4"))
+
+#Turing down Higher Pay From Another Organization to Keep Working at Organization Bar Plot - Most employees gave a loyalty rating of 4 (Unlikely) or 2 (Likely), showing mixed feelings about staying with the organization if they were offered higher pay elsewhere. This is also shown as employees selected 1 (Very Likely) or 5 (Very Unlikely). Almost none chose 3 (Not Sure).
+barplot(table(Typical_Employee_Survey_Data$Job_Loyalty_Choice), main = "Job Loyalty Choice", xlab = "Satisfaction Level", ylab = "Count", col = terrain.colors(5), names.arg = c("1", "2", "3", "4", "5"))
+
+#Workplace Relations with Coworkers and Colleagues - Most employees rated workplace relations as either 1 (Very Good) or 2 (Good), showing positive interactions among coworkers. A smaller number gave a 3 (So So), and very few rated it 4 (Bad), with no one selecting 5 (Very Bad)
+workplace_relations_counts <- table(Typical_Employee_Survey_Data$Workplace_Relations)
+pie(workplace_relations_counts, main = "Work Place Relations Satisfaction", labels = paste(names(workplace_relations_counts), "(", workplace_relations_counts, ")", sep = ""), col = rainbow(5))
+
+#Relationship between Age and Years Employed Scatter Plot- Shows a positive relationship between age and years employed. Older employees tend to have worked in organization longer. However, there is variability, especially among employees aged 30 to 40.
+plot(x = Typical_Employee_Survey_Data$Age, y = Typical_Employee_Survey_Data$Years_Employed, main = "Scatterplot of Age vs. Years Employed", xlab = "Age", ylab = "Years Employed", col = "turquoise", pch = 16)
+
+#Relationship between Age and Years Employed Scatter Plot - Shows that decision involvement ratings are spread across all age groups. There is no clear pattern or strong relationship that suggests an employee's age is correlated to the company including them in decision making.
+plot(as.numeric(Typical_Employee_Survey_Data$Decision_Involvement), Typical_Employee_Survey_Data$Age, main = "Relationship Between Age and Decision Involvement", xlab = "Descision Involvement", ylab = "Age (Years)", col = "magenta",pch = 16)
