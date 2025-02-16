@@ -1,0 +1,33 @@
+---
+title: "Assignment 2 - Getting My Time Series Data"
+author: "ksm187@scarletmail.rutgers.edu"
+date: "2025-02-15"
+output: 
+  html_document:
+    code_download: true
+---
+
+# Walmart Sales Data 2010 - 2012 Dictionary:
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+Walmart_Sales <- read.csv("/Users/kiramuzafarov/Downloads/Walmart_Sales.csv", header = TRUE)
+
+Variable_Name <- c("Store","Date","Weekly_Sales","Holiday_Flag","Temperature","Fuel_Price","CPI","Unemployment")
+Readable_Variable_Name <- c("Store","Date","Weekly_Sales","Holiday_Flag","Temperature","Fuel_Price","Consumer_Price_Index","Unemployment")
+Measurement_Units <- c("Number","Date","USD","Binary (0 or 1)","Fahrenheit","USD per gallon","Index","Percentage")
+Allowed_Values <- c("1 - 45", "10-01-2010 - 10-12-2012", "209986.2 - 3818686", "0 - 1", "-2.06 - 100.14", "2.472 - 4.468", "126.0640 - 227.2328","3.879 - 14.313")
+Variable_Definition <- c("Store number where sales were recorded","Date of sales record","Total sales for the store during the week","Indicator for a holiday week (1 = Holiday, 0 = Non-Holiday)","Average temperature recorded during the week","Price of fuel per gallon in the region","Consumer Price Index (CPI) for the region","Unemployment rate in the region")
+myDataFrame <- data.frame(Variable_Name,Readable_Variable_Name,Measurement_Units,Allowed_Values,Variable_Definition,stringsAsFactors = FALSE)
+
+print(myDataFrame)
+```
+# Data Collection Methodology:
+
+This Walmart Sales dataset is publicly available and records sales performance across multiple Walmart stores. The data was collected from Walmart's internal POS (point-of-sale) systems. This system captures transaction-level sales information from multiple store locations. Sales records were likely sourced from POS systems and economic indicators from public databases. The sales data is collected weekly, which could be organized into seasonal data. The dataset spans from January 10, 2010, to December 10, 2012, covering approximately 3 years. Multiple columns are included such as weekly sales CPI (Consumer Price Index), and unemployment rates to offer a comprehensive view of economic factor and sales trends.
+
+# Why This Dataset Intrigues Me
+
+Walmart, the world's largest retailer by revenue, provides valuable insights into how external factors like holidays, fuel prices, and unemployment rates affect sales. I am especially curious about uncovering seasonal trends (e.g., what happens to sales during holidays) and analyzing trends in the Consumer Price Index. I can also compare whether my forecasting is accurate, since this data is older (2010–2012).
+ 
