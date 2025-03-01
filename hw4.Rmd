@@ -1,0 +1,168 @@
+---
+title: "Walmart Sales Forecasting (Monthly)"
+author: "Kira Muzafarov"
+date: "02/27/20"
+output: 
+  html_document:
+    code_download: true
+---
+
+## **Time Series Forecasting of Walmart Monthly Sales**
+
+```{r setup, include=FALSE}
+library(fpp2)
+library(TTR)
+```
+
+### **1. Transforming My Weekly Data into Monthly Sales**
+```{r}
+```{r}
+# Note: I had to adjust my dataset because the sales data was recorded weekly, but I needed monthly data to check for seasonality. First, I extracted the year and month from the date column. Then, I created a new data frame for monthly sales and filled it by summing the weekly sales for each month. Finally, I converted the date back to the first day of each month to ensure proper formatting for time series analysis.
+
+# Importing Data
+Walmart_Sales <- read.csv("/Users/kiramuzafarov/Downloads/Walmart_Sales.csv", header = TRUE)
+
+# Converting Date column to "day-month-year" format.
+Walmart_Sales$Date <- as.Date(Walmart_Sales$Date, format = "%d-%m-%Y")
+
+# Extracting year and month.
+Walmart_Sales$YearMonth <- format(Walmart_Sales$Date, "%Y-%m")
+
+# Creating a dataframe to fill with monthly sales.
+unique_year_months <- unique(Walmart_Sales$YearMonth)
+monthly_sales <- data.frame(YearMonth = unique_year_months, Monthly_Sales = rep(NA, length(unique_year_months)))
+
+# Looping through each month and summing up the weekly sales.
+for (i in seq_along(unique_year_months)) {current_month <- unique_year_months[i]
+  monthly_sales$Monthly_Sales[i] <- sum(Walmart_Sales$Weekly_Sales[Walmart_Sales$YearMonth == current_month], na.rm = TRUE)}
+
+# Converting YearMonth back to Date format (first day of each month)
+monthly_sales$YearMonth <- as.Date(paste0(monthly_sales$YearMonth, "-01"))
+
+# Converting to a time series (monthly data, frequency = 12)
+start_year <- as.numeric(format(min(monthly_sales$YearMonth), "%Y"))
+start_month <- as.numeric(format(min(monthly_sales$YearMonth), "%m"))
+ts_monthly_sales <- ts(monthly_sales$Monthly_Sales, start = c(start_year, start_month), frequency = 12)
+
+# Checking structure
+str(Walmart_Sales)
+summary(Walmart_Sales)
+```
+
+### **2. Exploratory Analysis (Time Series, ACF, and Decomposition) & Forecasting Models**
+```{r}
+# A. Time Series Plot
+# This graph shows Walmart’s monthly sales over time. The fluctuations indicate seasonal variations and potential trends, with noticeable spikes and dips. Identifying these patterns helps in selecting appropriate forecasting models.
+plot(ts_monthly_sales, main = "Walmart Monthly Sales Time Series", 
+     ylab = "Monthly Sales", xlab = "Time", col = "black", lwd = 2, type = "l")
+
+# B. Autocorrelation (ACF) & Partial Autocorrelation (PACF)
+# The ACF plot measures how past sales influence future sales. A strong initial correlation suggests that past values impact future trends. The gradual decline indicates potential seasonality or trend components.
+acf(ts_monthly_sales, main = "Autocorrelation Function (ACF)")
+# The PACF plot isolates direct relationships between past and future sales. Significant lags indicate which past months most strongly affect current sales, helping in model selection for forecasting.
+pacf(ts_monthly_sales, main = "Partial Autocorrelation Function (PACF)")
+
+# C. Decomposition Analysis (STL)
+#This breakdown separates the data into trend, seasonality, and residual noise. The trend component shows long-term growth or decline, while the seasonal component captures recurring fluctuations in Walmart’s monthly sales. The remainder highlights random variations not explained by trend or seasonality.
+stl_decomp <- stl(ts_monthly_sales, s.window = "periodic")
+plot(stl_decomp, main = "STL Decomposition of Walmart Monthly Sales")
+
+# D. Mean Forecast: 
+# Assumes that future sales will be the average of past sales. This model suggests that Walmart's future sales will remain stable, following the historical average. However, it is unreliable for a retail company with seasonal fluctuations (e.g., holiday sales spikes) as this model ignores trends and seasonality.
+mean_forecast <- meanf(ts_monthly_sales, h = 12)
+plot(mean_forecast, main = "Mean Forecast for Walmart Monthly Sales", 
+     ylab = "Monthly Sales", xlab = "Time", col = "orange")
+
+# E. Naïve Forecast
+# Assumes that the last observed sales value will persist into the future. If Walmart's most recent sales figure is $200M, this model predicts that future monthly sales will stay around $200M. This approach is useful for short-term forecasting when there are no strong seasonal patterns, but it is not ideal for capturing annual trends or holiday-driven fluctuations.
+naive_forecast <- naive(ts_monthly_sales, h = 12)
+plot(naive_forecast, main = "Naïve Forecast for Walmart Monthly Sales", 
+     ylab = "Monthly Sales", xlab = "Time", col = "blue")
+
+# F. Random Walk
+# Assumes that sales follow a random walk but also considers a slight upward or downward trend over time. If Walmart's sales have been gradually increasing, this model will account for that trend. However, it does not explicitly model seasonality, meaning it may underpredict or overpredict sales during peak months (e.g., Black Friday).
+rwf_forecast <- rwf(ts_monthly_sales, h = 12, drift = TRUE)
+plot(rwf_forecast, main = "Random Walk Forecast for Walmart Monthly Sales", 
+     ylab = "Monthly Sales", xlab = "Time", col = "red")
+
+# G. Seasonal Naïve Forecast
+# Assumes that sales will repeat seasonal patterns from previous years. Since Walmart experiences higher sales in November-December (holiday shopping) and lower sales in early Q1, this model will forecast future November sales based on previous Novembers. This makes it one of the most useful models for seasonally-driven businesses like retail.
+snaive_forecast <- snaive(ts_monthly_sales, h = 12)
+plot(snaive_forecast, main = "Seasonal Naïve Forecast for Walmart Monthly Sales", 
+     ylab = "Monthly Sales", xlab = "Time", col = "green")
+
+# H. Exponential Smoothing (ETS)
+# This model smooths out fluctuations and captures trends and seasonality. However, it is flat in this forecast. This suggests it isn’t detecting strong seasonal patterns in Walmart’s monthly sales. This might indicate that the model favors stability over adapting to recent sales changes.
+ets_forecast <- forecast(ets(ts_monthly_sales), h = 12)
+plot(ets_forecast, main = "ETS Model Forecast for Walmart Monthly Sales", 
+     ylab = "Monthly Sales", xlab = "Time", col = "purple")
+
+# I. Holt-Winters Models
+# This model smooths out trends and seasonality to predict future sales for long-term growth and seasonal fluctuations. For Walmart, it helps track patterns in monthly sales, adjusting for seasonal shifts and long-term growth.However, the simple forecast model is not a good fir since it does account for seasonality.
+HW_forecast <- forecast(HoltWinters(ts_monthly_sales), h = 12) 
+plot(HW_forecast, main = "Holt-Winters Forecast for Walmart Monthly Sales", col = "magenta")
+SSE_HoltWinters <- HW_forecast$SSE  
+print(SSE_HoltWinters)
+head(HW_forecast$fitted)
+SSE_Simple <- forecast(HoltWinters(ts_monthly_sales, beta=FALSE, gamma=FALSE), h = 12)
+plot(SSE_Simple, main = "Holt-Winters Smoothing without Trend and Seasonality", col = "brown")
+SSE_Simple$SSE
+
+# J. Moving Averages
+# This model smooths fluctuations by averaging past sales, making trends easier to see. In Walmart’s monthly sales, it highlights the overall pattern but is not very effective for capturing seasonal spikes or unexpected shifts in demand.
+MA5_forecast <- ma(ts_monthly_sales, order = 5)
+MA9_forecast <- ma(ts_monthly_sales, order = 9)
+plot(ts_monthly_sales, main = "Moving Average Forecast for Walmart Monthly Sales", 
+     ylab = "Monthly Sales", xlab = "Time", col = "black", lwd = 2, type = "l")
+lines(MA5_forecast, col = "pink", lwd = 2, lty = 7)  # MA(5)
+lines(MA9_forecast, col = "cyan", lwd = 2, lty = 8)  # MA(9)
+```
+
+
+### **4. Plotting Forecasts Together**
+```{r}
+# Note: When plotting the forecasts, I also had to shift them to the correct time periods to align with the actual sales data and prevent gaps in the visualization.
+
+# Base plot: Actual Sales
+plot(ts_monthly_sales, main = "Forecast Comparison for Walmart Monthly Sales", ylab = "Monthly Sales", xlab = "Time", col = "black", type = "l", lwd = 2, ylim = range(ts_monthly_sales, mean_forecast$mean, naive_forecast$mean, rwf_forecast$mean, snaive_forecast$mean, ets_forecast$mean, HW_forecast$mean, SSE_Simple$mean), xlim = c(start(ts_monthly_sales)[1], end(ts_monthly_sales)[1] + 1)) # Extends time axis
+
+# Adding forecast lines
+lines(mean_forecast$mean, col = "orange", lwd = 2)  # Mean Forecast
+lines(naive_forecast$mean, col = "blue", lwd = 2)  # Naïve Forecast
+lines(rwf_forecast$mean, col = "red", lwd = 2) # Random Walk
+lines(snaive_forecast$mean, col = "green", lwd = 2)  # Seasonal Naïve Forecast
+lines(ets_forecast$mean, col = "purple", lwd = 2)  # ETS Forecast
+lines(HW_forecast$mean, col = "magenta", lwd = 2, lty = 3) # Holt Winters Forecast
+lines(SSE_Simple$mean, col = "brown", lwd = 2) # Holt Winters Forecast w/o Trend/ Seasonality
+
+# Moving Averages
+lines(MA5_forecast, col = "pink", lwd = 1.5, lty = 7)
+lines(MA9_forecast, col = "cyan", lwd = 1.5, lty = 8)
+
+# Legend
+legend("topleft", legend = c("Actual Sales", "Mean Forecast", "Naïve", "Randown Walk", "Seasonal Naïve", "ETS", "Holt Winters", "HW w/o Trend", "MA(5)", "MA(9)"), col = c("black", "orange", "blue", "red", "green", "purple",  "magenta", "brown", "pink", "cyan"), lty = c(1, 2, 3, 4, 5, 1, 7, 8), lwd = 2, cex = 0.75, bty = "n")
+
+#Based on the graph, it appears as though the Seasonal Naïve Forecast and the Holt-Winters forecast is the best model for this data set as it accounts for seasonality, which is important to include in retail.
+```
+
+### **5. Model Accuracy Comparison**
+```{r}
+# Note: I had to compare forecast accuracy only for the overlapping time periods because forecasts extend beyond the observed data, and evaluating them outside the available time frame would be misleading.
+
+# Comparing model accuracy
+accuracy(mean_forecast$fitted, ts_monthly_sales)
+accuracy(naive_forecast$fitted, ts_monthly_sales)
+accuracy(rwf_forecast$fitted, ts_monthly_sales)
+accuracy(snaive_forecast$fitted, ts_monthly_sales)
+accuracy(ets_forecast$fitted, ts_monthly_sales)
+accuracy(HW_forecast$fitted, ts_monthly_sales)
+accuracy(SSE_Simple$fitted, ts_monthly_sales)
+
+# Choosing an accuracy measure
+# I am choosing RMSE (Root Mean Squared Error) and MAE (Mean Absolute Error) as my accuracy measures. RMSE gives more weight to larger errors, so lower values mean better predictions. MAE is easier to understand since it shows the average error size. RMSE and MAE are useful for Walmart's monthly sales because they highlight how far off the forecasts are from actual sales. RMSE helps catch big spikes or drops in sales (like holiday surges), while MAE gives a clear idea of the typical forecasting error. Since Walmart’s sales tend to have seasonal trends, using these metrics helps compare which model best captures those patterns while minimizing large mistakes.
+
+# Best Model Based on Accuracy
+# The Seasonal Naïve Forecast and Holt-Winters models seem to be the best fit for the data. They perform best, as they capture seasonal trends.
+# Seasonal Naïve Forecast has the lowest RMSE (27395809) and MAE (18984713), making it the most accurate for capturing Walmart's seasonal sales patterns.
+# Holt-Winters also performs well with RMSE (26332295) and MAE (17633874), reinforcing its ability to model seasonality.
+```
