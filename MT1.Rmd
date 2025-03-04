@@ -1,0 +1,84 @@
+---
+title: "Practice Midterm 1.Rmd"
+author: "Kira Muzafarov"
+date: "2025-03-03"
+output: 
+  html_document:
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+library(fpp2)
+```
+
+### **Time Series**
+```{r}
+plot(ts(arrivals[,4]), main = "Quarterly Arrivals From The USA to Australia (1981-2012)", ylab = "Arrivals", xlab = "Time (Quarterly)")
+# 
+```
+##### This plot shows a long-term increasing trend in arrivals from the USA to Australia, with seasonal variations that became more noticeable over time. This could be due to an increase in tourism or economic growth. There are some spikes, such as the one in 2000, which can be explained by the Olympics taking place in Australia.
+
+### **Central Tendency**
+```{r}
+print(summary(ts(arrivals[,4])))
+boxplot(ts(arrivals[,4]), main = "Box Plot of Quarterly Arrivals From USA to Australia (1981-2012)", ylab = "Time (Quarterly)")
+# This plot shows that the median of the data has gradually increased over the quarters. The median is close to the mean indicating a symmetrical distribution. There are no significant outliers in the data. Seasonality most likely the reason why there is variation in the values. 
+```
+
+### **Decomposition**
+```{r}
+stl_decomp <- stl((arrivals[,4]), s.window = "periodic")
+plot(stl_decomp, main = "STL Decomposition Quarterly Arrivals From USA to Australia (1981-2012)")
+# The time series is seasonal as the seasonal component shows a regular clear pattern that repeats every year.
+
+decomp_arrivals <- decompose((arrivals[,4]))
+plot(decomp_arrivals)
+# The time series is additive, meaning that seasonal fluctuations appear to stay constant over time.
+
+seasonal_indices <- stl_decomp$time.series[, "seasonal"]
+unique(seasonal_indices)
+# The Highest seasonal impact is in  Quarter 1 (6.713605) and lowest is in Quarter 2 (-7.918807). This means that from January to March there are more arrivals than average and from April to June there are less than average arrivals.
+# This might be due to the seasonal differences between the USA and Australia as the highest arrivals tend to be when it is winter in the US and when it is summer in Australia.
+
+seasadj(stl_decomp)
+plot((arrivals[,4]), main = "USA to Australia Quarterly Arrivals (1981-2012): Actual vs. Seasonally Adjusted", ylab = "Arrivals", xlab = "Time (Quarterly)")
+lines(seasadj(stl_decomp), col="Red")
+# Since there is a significant difference between the two lines, the graph indicates that seasonality does cause significant fluctuations in the values.
+```
+##### Shows: Seasonal, additive, quarter 1 (highest), quarter 2 (lowest), opposite seasons in coutries cause seasonality, seaonality is a great component of the time series.
+
+### **Naïve Method**
+```{r}
+naive_forecast <- naive(arrivals[,4])
+plot(naive_forecast)
+
+plot(residuals(naive_forecast), main="Residuals Over Time", ylab="Residuals", xlab="Time")
+# Residuals have no clear trend and randomly fluctuate around zero, predication errors appear to grow as the time, and there is no seasonality in the data.
+
+hist(residuals(naive_forecast), main="Histogram of Residuals", xlab="Residuals")
+# Shows a  right skewed, almost bell shaped distribution centered around 0. This indicates that the model sometimes under predicts large values (does not capture spikes well.)
+
+plot(fitted(naive_forecast), residuals(naive_forecast), main="Fitted Values vs. Residuals", xlab="Fitted Values", ylab="Residuals")
+# The structured pattern suggests that errors are not purely random, and the model is missing important features. The spread of the resuduals widening at higher fitted values suggests that errors increase with values.
+
+plot(naive_forecast$x, residuals(naive_forecast), main="Actual Values vs. Residuals", xlab="Actual Values", ylab="Residuals")
+# The full pattern of the data is not being captures as the residuals are not randomly spread around zero. It also appears that errors increase as values increase.
+
+Acf(residuals(naive_forecast), main="ACF Plot of Residuals")
+# The residuals are not independent and not all lags stay within the confidence bounds, meaning residuals are random.
+```
+##### Naïve forecast is not a good forecasting model for the data.
+
+### **Summary, Accuracy, and Prediction**
+```{r}
+summary(naive_forecast)
+# Assumes that the most recent observation is the best predictor of all future periods and does not account for trends or seasonality.
+accuracy(naive_forecast)
+# RSME and MAE are high, which shows the model struggles to capture data patterns.MAPE also is greater than ten, indicating that model is not accurate. ACF1 is negative and close to zero, which means the model has other factors that affect the time series (errors are not fully independent)
+forecast(naive_forecast, h=4)
+plot(forecast(naive_forecast, h=4))
+# prediction interval seems to widen overtime and the predicted value stays the same throughout (106.54), which is a limitation.
+
+# Other Observations: error seems to increase as the model predicts into the future
+```
+##### Accuracy of model is not very good. 106.54 will be the time series value in a year. Error increases into the future.
