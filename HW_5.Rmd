@@ -1,0 +1,78 @@
+---
+title: "HW_5.Rmd"
+author: "Kira Muzafarov"
+date: "2025-04-03"
+output: 
+  html_document:
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+# Importing Data
+Walmart_Sales <- read.csv("/Users/kiramuzafarov/Downloads/Walmart_Sales.csv", header = TRUE)
+
+# Converting Date column to "day-month-year" format.
+Walmart_Sales$Date <- as.Date(Walmart_Sales$Date, format = "%d-%m-%Y")
+
+# Extracting year and month.
+Walmart_Sales$YearMonth <- format(Walmart_Sales$Date, "%Y-%m")
+
+# Creating a dataframe to fill with monthly sales.
+unique_year_months <- unique(Walmart_Sales$YearMonth)
+monthly_sales <- data.frame(YearMonth = unique_year_months, Monthly_Sales = rep(NA, length(unique_year_months)))
+
+# Looping through each month and summing up the weekly sales.
+for (i in seq_along(unique_year_months)) {current_month <- unique_year_months[i]
+  monthly_sales$Monthly_Sales[i] <- sum(Walmart_Sales$Weekly_Sales[Walmart_Sales$YearMonth == current_month], na.rm = TRUE)}
+
+# Converting YearMonth back to Date format (first day of each month)
+monthly_sales$YearMonth <- as.Date(paste0(monthly_sales$YearMonth, "-01"))
+
+# Converting to a time series (monthly data, frequency = 12)
+start_year <- as.numeric(format(min(monthly_sales$YearMonth), "%Y"))
+start_month <- as.numeric(format(min(monthly_sales$YearMonth), "%m"))
+ts_monthly_sales <- ts(monthly_sales$Monthly_Sales, start = c(start_year, start_month), frequency = 12)
+
+# Checking structure
+str(Walmart_Sales)
+summary(Walmart_Sales)
+
+# Loading libraries
+library(forecast)
+library(ggplot2)
+library(fpp)
+library(fpp2)
+library(forecast)
+```
+
+```{r}
+# 1. ARIMA Model
+ndiffs(ts_monthly_sales)
+tsdisplay(ts_monthly_sales)
+ts_monthly_salesdiff1 <- diff(ts_monthly_sales, differences=1)
+plot(ts_monthly_salesdiff1)
+tsdisplay(ts_monthly_salesdiff1)
+arima_model <- auto.arima(ts_monthly_sales, stepwise = FALSE, approximation = FALSE)
+summary(arima_model)
+
+# The selected ARIMA model is (1,0,0)(0,1,0)[12]. For the non-seasonal part, it uses 1 autoregressive term (AR1), no differencing, and no moving average terms. For the seasonal part, the model applies 1 seasonal difference to make the series stationary and captures yearly seasonality with a period of 12. So the model uses last month’s value and adjusts for seasonal patterns repeating every 12 months, like holiday trends.
+
+# 2. Residual Analysis
+checkresiduals(arima_model)
+Acf(residuals(arima_model))
+Box.test(residuals(arima_model), lag = 20, type = "Ljung-Box")
+hist(residuals(arima_model))
+tsdiag(arima_model)
+
+# Residuals appear scattered around zero and approximately normally distributed, with no significant autocorrelation. The Ljung-Box test (p = 0.6422) also shows no significant autocorrelation in the residuals, meaning the model fits the data well. The histogram looks fairly normal.
+
+# 3. Forecast Next 5 Months
+forecast_result <- forecast(arima_model, h = 5)
+autoplot(forecast_result)
+
+#The model appears to pick up on the yearly patterns, which is why the forecast follows a similar seasonal trend.
+
+# 4. Accuracy of the ARIMA Model
+accuracy(arima_model)
+
+# Overall the model fits well. The MAPE is 4.60%, which means the model is fairly accurate. This means that on average arima forecasts are within about 4.6% of actual sales. The MASE is 0.51, which is less than 1, indicating that the model performs well. The ACF1 value is -0.21, showing that there’s no strong autocorrelation left in the residual.
